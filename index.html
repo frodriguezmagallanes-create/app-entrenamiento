@@ -3,8 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#E2570E">
-<title>Bitácora de entrenamiento</title>
+<meta name="theme-color" content="#E2570E" id="themeColor">
+<title>PlanFit</title>
+<link rel="icon" id="favicon" href="data:,">
+<script>
+/* =====================================================================
+   PERSONALIZACIÓN — lo único que hay que tocar para cada cliente.
+   Para hacerle la app a un entrenador: copiá este archivo, cambiá estos
+   valores, y subilo como un proyecto nuevo en Vercel.
+   ===================================================================== */
+window.BRAND = {
+  nombre:     "PlanFit",                    // nombre que se ve arriba y en la pestaña
+  bajada:     "Tu plan de entrenamiento",   // frase chica arriba del nombre
+  iniciales:  "PF",                         // letras del logo (si no hay imagen)
+  color:      "#E2570E",                    // color principal (modo claro)
+  colorNoche: "#FF7A33",                    // color principal (modo oscuro)
+  logo:       "",                           // logo propio: imagen en "data:image/png;base64,…" o vacío
+
+  // Solo para la versión de un entrenador (dejá vacío en la versión PlanFit):
+  entrenador: "",                           // ej: "Coach Martina López"
+  whatsapp:   "",                           // con código de país, sin + ni espacios: "5491112345678"
+  instagram:  "",                           // usuario sin @
+  plantilla:  "",                           // "hyrox", "gym" o "run": se carga sola la primera vez
+  plan:       null                          // o pegá acá el plan que bajaste con "Bajar plan (.json)"
+};
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
@@ -37,6 +60,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);o
 section.wrap{gap:14px;width:100%}
 h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:.01em}
 h1{font-size:32px;font-weight:800;text-transform:uppercase;line-height:1}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:48px;height:48px;border-radius:12px;flex:none;overflow:hidden;background:var(--signal)}
+.logo img,.logo svg{width:100%;height:100%;display:block;object-fit:cover}
+.coach{display:flex;flex-direction:column;gap:10px}
+.coach .btns a{text-decoration:none;display:inline-flex;align-items:center}
+.foot{text-align:center;font-size:13px;color:var(--mute);padding-top:8px}
+.foot a{color:var(--signal);font-weight:600}
 h2{font-size:22px;font-weight:700;text-transform:uppercase}
 h3{font-size:19px;font-weight:700}
 p{margin:0}
@@ -199,9 +229,12 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 3px 0 
   </div>
 
   <header>
-    <div>
-      <div class="eyebrow" id="who">Entreno · comidas · calorías</div>
-      <h1>Bitácora de entrenamiento</h1>
+    <div class="brand">
+      <span class="logo" id="logo" aria-hidden="true"></span>
+      <div>
+        <div class="eyebrow" id="who"></div>
+        <h1 id="brandName">PlanFit</h1>
+      </div>
     </div>
     <div class="block" id="blockBox"><span class="eyebrow" id="blockLbl">Bloque</span><b id="blockTxt">Semana 1</b></div>
   </header>
@@ -257,6 +290,7 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 3px 0 
 
   <!-- PLAN -->
   <section id="v-plan" hidden class="wrap">
+    <div id="coachCard"></div>
     <h2>La semana</h2>
     <div id="planRead"></div>
     <div id="notasRead"></div>
@@ -264,6 +298,7 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 3px 0 
     <p class="note">Lo puede armar cada persona o su entrenador. Los cambios se guardan solos.</p>
     <div id="editor" class="wrap" style="gap:10px"></div>
     <div class="msg" id="msgPlan" role="status"></div>
+    <p class="foot" id="foot"></p>
   </section>
 </div>
 
@@ -363,13 +398,50 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const lsGet = (k,def) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? def; } catch(e){ return def; } };
 const lsSet = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } };
 
+/* ---------- marca ---------- */
+const B = Object.assign({nombre:"PlanFit", bajada:"", iniciales:"PF", color:"#E2570E", colorNoche:"#FF7A33", logo:"", entrenador:"", whatsapp:"", instagram:"", plantilla:"", plan:null}, window.BRAND||{});
+const PLANFIT_IG = "planfit.ar";
+const hexOk = c => /^#[0-9a-fA-F]{6}$/.test(c||"");
+function logoSVG(){
+  const ini = esc(String(B.iniciales||B.nombre.slice(0,2)).slice(0,3).toUpperCase());
+  const bg = hexOk(B.color) ? B.color : "#E2570E";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><rect width="1080" height="1080" fill="${bg}"/><g fill="#1B1D20" transform="translate(-15,10)"><rect x="300" y="700" width="90" height="120" rx="14"/><rect x="420" y="620" width="90" height="200" rx="14"/><rect x="540" y="540" width="90" height="280" rx="14"/><rect x="660" y="430" width="90" height="390" rx="14"/></g><text x="540" y="430" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,Arial,sans-serif" font-weight="800" font-size="330" fill="#FFFFFF">${ini}</text></svg>`;
+}
+function applyBrand(){
+  document.title = B.nombre;
+  $("#brandName").textContent = B.nombre;
+  const c1 = hexOk(B.color) ? B.color : "#E2570E", c2 = hexOk(B.colorNoche) ? B.colorNoche : c1;
+  const st = document.createElement("style");
+  st.textContent = `:root{--signal:${c1}}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--signal:${c2}}}:root[data-theme="dark"]{--signal:${c2}}`;
+  document.head.appendChild(st);
+  $("#themeColor").setAttribute("content", c1);
+  const logoSrc = /^data:image\//.test(B.logo||"") || /^https?:\/\//.test(B.logo||"") ? B.logo : "";
+  if(logoSrc){ const img = document.createElement("img"); img.src = logoSrc; img.alt = ""; $("#logo").appendChild(img); }
+  else $("#logo").innerHTML = logoSVG();
+  $("#favicon").href = logoSrc || "data:image/svg+xml," + encodeURIComponent(logoSVG());
+  const ig = B.instagram ? String(B.instagram).replace(/^@/,"") : "";
+  $("#coachCard").innerHTML = B.entrenador ? `<div class="card coach"><div class="eyebrow">Tu entrenador</div><h3>${esc(B.entrenador)}</h3>
+    <div class="btns">${B.whatsapp ? `<a class="btn ghost small" href="https://wa.me/${esc(String(B.whatsapp).replace(/\D/g,""))}">WhatsApp</a>` : ""}${ig ? `<a class="btn ghost small" href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>` : ""}</div>
+    ${B.whatsapp ? `<span class="note">WhatsApp: +${esc(String(B.whatsapp).replace(/\D/g,""))}</span>` : ""}</div>` : "";
+  $("#foot").innerHTML = B.entrenador || B.nombre!=="PlanFit"
+    ? `Hecho con PlanFit · <a href="https://instagram.com/${PLANFIT_IG}">@${PLANFIT_IG}</a>`
+    : `PlanFit · ¿Sos entrenador y querés esta app con tu marca? <a href="https://instagram.com/${PLANFIT_IG}">Escribinos a @${PLANFIT_IG}</a>`;
+}
+function firstCfg(){
+  const saved = lsGet(K.cfg, null); if(saved) return normCfg(saved);
+  let c = emptyCfg();
+  if(B.plan && Array.isArray(B.plan.types)) c = normCfg({...c, ...B.plan, perfil:c.perfil});
+  else if(TEMPLATES[B.plantilla]) c = normCfg({...c, ...TEMPLATES[B.plantilla].build()});
+  if(c.types.length) lsSet(K.cfg, c);
+  return c;
+}
+
 /* ---------- estado ---------- */
-let cfg = normCfg(lsGet(K.cfg, null) || emptyCfg());
+let cfg = firstCfg();
 let sessions = lsGet(K.ses, []);
 let meals = lsGet(K.meals, {});
 let pendingShare = null;
 const state = {date: iso(new Date()), type: null, view:"hoy", open:new Set(["perfil"])};
-state.type = planType(state.date);
 
 function normCfg(c){
   const d = emptyCfg();
@@ -471,8 +543,8 @@ const isDeload = b => b && cfg.bloque.descarga && b.w===b.n;
 
 /* ---------- render: cabecera y semana ---------- */
 function renderHead(){
-  $("#who").textContent = cfg.perfil.nombre ? cfg.perfil.nombre + " · entreno y comidas" : "Entreno · comidas · calorías";
-  const b = blockInfo();
+  $("#who").textContent = cfg.perfil.nombre ? cfg.perfil.nombre + (B.entrenador ? " · con " + B.entrenador : "") : (B.entrenador ? "Plan de " + B.entrenador : (B.bajada || "Entreno · comidas · calorías"));
+  const b = cfg.types.length ? blockInfo() : null;
   $("#blockBox").hidden = !b;
   if(b){
     $("#blockLbl").textContent = `Bloque de ${b.n} semanas`;
@@ -1045,6 +1117,8 @@ function showView(v){
   window.scrollTo(0,0);
 }
 
+state.type = planType(state.date);
+applyBrand();
 renderAll();
 renderEditor();
 checkHash();
